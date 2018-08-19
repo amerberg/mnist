@@ -18,8 +18,10 @@ from nn.optimizer import AdaGrad, GradientDescent
 from nn.loss import SoftMaxCrossEntropyWithLogits
 FLAGS = None
 
+
 def weight_initializer(shape):
     return truncated_normal(shape, stddev=0.1)
+
 
 def bias_initializer(shape):
     return 0.1 * np.ones(shape)
@@ -42,14 +44,14 @@ def main(args):
           MaxPool2D(pool_size=(2, 2)),
           Flatten(),
           Dense(1024, weight_initializer=weight_initializer, bias_initializer=bias_initializer, activation=relu),
-          Dense(10, weight_initializer=weight_initializer, bias_initializer=bias_initializer, activation=relu)
+          Dense(10, weight_initializer=weight_initializer, bias_initializer=bias_initializer)
       ],
       optimizer=AdaGrad(learning_rate=0.001, epsilon=1e-8),
       loss=SoftMaxCrossEntropyWithLogits()
     )
 
-  # Train
-    for _ in range(20):
+    # Train
+    for _ in range(100):
         batch_xs, batch_ys = mnist.train.next_batch(100)
         batch_xs = np.reshape(batch_xs, [-1, 28, 28, 1])
         model.fit_batch(batch_xs, batch_ys)
