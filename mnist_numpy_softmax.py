@@ -37,12 +37,10 @@ def main(args):
       loss=SoftMaxCrossEntropyWithLogits()
     )
 
-  # Train
+    # Train
     for _ in range(1000):
         batch_xs, batch_ys = mnist.train.next_batch(100)
         model.fit_batch(batch_xs, batch_ys)
-        print(model.batch_number)
-        print('Batch loss: {}'.format(model.loss.compute(model.predict(batch_xs), batch_ys)))
 
     # Test trained model
     actual_labels = np.argmax(mnist.test.labels, 1)
