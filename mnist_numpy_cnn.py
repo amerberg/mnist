@@ -9,12 +9,13 @@ import argparse
 from tensorflow.examples.tutorials.mnist import input_data
 
 import numpy as np
+import time
 
 from nn.layer import Conv2D, MaxPool2D, Flatten, Dense
 from nn.model import Model
 from nn.activation import ReLU
 from nn.tools import truncated_normal
-from nn.optimizer import AdaGrad, GradientDescent
+from nn.optimizer import AdaGrad
 from nn.loss import SoftMaxCrossEntropyWithLogits
 FLAGS = None
 
@@ -51,18 +52,17 @@ def main(args):
     )
 
     # Train
-    for _ in range(100):
+    for _ in range(200):
         batch_xs, batch_ys = mnist.train.next_batch(100)
         batch_xs = np.reshape(batch_xs, [-1, 28, 28, 1])
         model.fit_batch(batch_xs, batch_ys)
-        print(model.batch_number)
-        print('Batch loss: {}'.format(model.loss.compute(model.predict(batch_xs), batch_ys)))
+        if args.verbose:
+            print('Batch {} loss: {}'.format(model.batch_number, model.loss.compute(model.predict(batch_xs), batch_ys)))
 
     # Test trained model
-    actual_labels = np.argmax(mnist.test.labels[:1000, :], 1)
-    predictions = model.predict(np.reshape(mnist.test.images[:1000, :], [-1, 28, 28, 1]))
+    actual_labels = np.argmax(mnist.test.labels, 1)
+    predictions = model.predict(np.reshape(mnist.test.images, [-1, 28, 28, 1]))
     predicted_labels = np.argmax(predictions, 1)
-    print(predicted_labels)
 
     accuracy = (actual_labels == predicted_labels).mean()
     print("Test accuracy: {}".format(accuracy))
@@ -72,5 +72,6 @@ if __name__ == '__main__':
   parser = argparse.ArgumentParser()
   parser.add_argument('--data_dir', type=str, default='/tmp/tensorflow/mnist/input_data',
                       help='Directory for storing input data')
+  parser.add_argument('--verbose', action='store_true', dest='verbose')
   args = parser.parse_args()
   main(args)

@@ -7,6 +7,7 @@ class NotYetSupportedError(Exception):
 
 
 def filter2d(input_, filter_, stride=(1, 1)):
+    """ Convolve (crosscorrelate, really) a filter with an input vector. """
     h_out = (input_.shape[1] - filter_.shape[0]) // stride[0] + 1
     v_out = (input_.shape[2] - filter_.shape[1]) // stride[1] + 1
     result = np.zeros((input_.shape[0], h_out, v_out, filter_.shape[-1]))
@@ -20,6 +21,7 @@ def filter2d(input_, filter_, stride=(1, 1)):
 
 
 def zero_pad(input_, filter_size, mode):
+    """ Pad an input vector for convolution with a filter of the given size."""
     if mode == 'valid':
         return input_
     elif mode == 'same':
@@ -32,10 +34,11 @@ def zero_pad(input_, filter_size, mode):
 
 
 def truncated_normal(shape, mean=0, stddev=1):
-    return stddev * (truncnorm.rvs(-2, 2, size=shape) + mean)
+    """ Generate values from a normal distribution truncated at 2 std deviations."""
+    return stddev * (truncnorm.rvs(-2, 2, size=shape)) + mean
 
 
 def softmax(x):
+    """ Softmax of an array. """
     exp = np.exp(x - np.max(x))
     return exp / exp.sum(axis=1)[:, np.newaxis]
-
