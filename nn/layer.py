@@ -21,6 +21,8 @@ def cached(key):
 
 
 class Layer(object):
+    """ A base class for layer objects. This implements some basic functionality for
+        interacting with adjacent layers and for caching values."""
     def __init__(self):
         self._cache = {}
         self._persistent_cache = {}
@@ -40,6 +42,7 @@ class Layer(object):
         self.model = model
 
     def set_previous(self, previous_layer):
+        """ Set the previous layer. This base"""
         self.previous_layer = previous_layer
         self.input_shape = previous_layer.output_shape
 
@@ -147,8 +150,10 @@ class Conv2D(Layer):
         input_ = self.get_cache('input')
         h = input_.shape[1]
         w = input_.shape[2]
-        pad_l, pad_t = (error_shape[0] - 1) // 2, (error_shape[1] - 1) // 2
-        pad_r, pad_b = (error_shape[0] - 1) - pad_l, (error_shape[1] - 1) - pad_t
+        #pad_l, pad_t = (error_shape[0] - 1) // 2, (error_shape[1] - 1) // 2
+        #pad_r, pad_b = (error_shape[0] - 1) - pad_l, (error_shape[1] - 1) - pad_t
+        pad_r, pad_b = (error_shape[0] - 1) // 2, (error_shape[1] - 1) // 2
+        pad_l, pad_t = (error_shape[0] - 1) - pad_r, (error_shape[1] - 1) - pad_b
         padded_input = np.pad(input_, ((0, 0), (pad_l, pad_r), (pad_t, pad_b), (0, 0)),  'constant')
         # TODO: this assumes same padding. support other types.
         # TODO: I kept getting an IndexError with np.fromfunction, so here's a nested for loop
@@ -162,6 +167,7 @@ class Conv2D(Layer):
 
 
 class MaxPool2D(Layer):
+    """A max pooling layer."""
     def __init__(self, pool_size, stride=None, padding='valid', input_shape=None):
         super().__init__()
         self.pool_size = pool_size
@@ -222,6 +228,7 @@ class MaxPool2D(Layer):
 
 
 class Dense(Layer):
+    """ This class implements a fully-connected layer."""
     def __init__(self, size, weight_initializer, bias_initializer, input_shape=None, activation=Identity()):
         super().__init__()
         self.size = size

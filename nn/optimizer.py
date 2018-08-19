@@ -9,6 +9,7 @@ class Optimizer(object):
 
 
 class AdaGrad(Optimizer):
+    """ Implements AdaGrad as documented at http://ruder.io/optimizing-gradient-descent/"""
     def __init__(self, learning_rate=0.001, epsilon=1e-8):
         self.learning_rate = learning_rate
         self.epsilon = epsilon
