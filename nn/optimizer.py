@@ -1,11 +1,10 @@
 import numpy as np
 
 class Optimizer(object):
-    def train_step(self, model, X, Y):
-        model.feedforward(X, Y)
-        model.backpropagate()
-        for layer in model.layers:
-            self.update_parameters(layer)
+    """ Optimizer base class"""
+    def update_layer(self, layer):
+        """ Override this to update the parameters."""
+        raise NotImplementedError()
 
 
 class AdaGrad(Optimizer):
@@ -29,6 +28,7 @@ class AdaGrad(Optimizer):
 
 
 class GradientDescent(Optimizer):
+    """ Simple implementation of batch gradient descent."""
     def __init__(self, learning_rate=0.1):
         self.learning_rate = learning_rate
 

@@ -125,8 +125,8 @@ class Conv2D(Layer):
             self.output_shape = input_shape[0], input_shape[1], channels
         elif padding == 'valid':
             self.output_shape = ((input_shape[0] - filter_size[0] + 1) // stride[0],
-                    (input_shape[1] - filter_size[1] + 1) // stride[0],
-                    channels)
+                                 (input_shape[1] - filter_size[1] + 1) // stride[0],
+                                 channels)
 
     @cached('error')
     def error(self):
@@ -150,19 +150,17 @@ class Conv2D(Layer):
         input_ = self.get_cache('input')
         h = input_.shape[1]
         w = input_.shape[2]
-        #pad_l, pad_t = (error_shape[0] - 1) // 2, (error_shape[1] - 1) // 2
-        #pad_r, pad_b = (error_shape[0] - 1) - pad_l, (error_shape[1] - 1) - pad_t
-        pad_r, pad_b = (error_shape[0] - 1) // 2, (error_shape[1] - 1) // 2
-        pad_l, pad_t = (error_shape[0] - 1) - pad_r, (error_shape[1] - 1) - pad_b
+        pad_l, pad_t = (error_shape[0] - 1) // 2, (error_shape[1] - 1) // 2
+        pad_r, pad_b = (error_shape[0] - 1) - pad_l, (error_shape[1] - 1) - pad_t
         padded_input = np.pad(input_, ((0, 0), (pad_l, pad_r), (pad_t, pad_b), (0, 0)),  'constant')
         # TODO: this assumes same padding. support other types.
-        # TODO: I kept getting an IndexError with np.fromfunction, so here's a nested for loop
+        # TODO: I kept getting an IndexError with np.fromfunction, so we'll use a nested for loop
         grads = np.zeros(self.filter.shape)
         for m in range(grads.shape[0]):
             for n in range(grads.shape[1]):
                 for k in range(grads.shape[2]):
                     for r in range(grads.shape[3]):
-                        grads[m, n, k, r] = np.sum(error[:, :h, :w, r] * padded_input[:, m: m + h, n: n + w, k])
+                        grads[m, n, k, r] = np.sum(error[:, :, :, r] * padded_input[:, m: m + h, n: n + w, k])
         return grads
 
 

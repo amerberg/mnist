@@ -1,7 +1,8 @@
 import numpy as np
 
 
-class Model:
+class Model(object):
+    """Model class which handles interactions between layers, training, optimization, etc."""
     def __init__(self, layers, loss, optimizer):
         for layer in layers:
             layer.set_model(self)
