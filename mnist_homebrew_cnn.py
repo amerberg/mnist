@@ -14,7 +14,7 @@ from nn.layer import Conv2D, MaxPool2D, Flatten, Dense
 from nn.model import Model
 from nn.activation import ReLU
 from nn.tools import truncated_normal
-from nn.optimizer import AdaGrad
+from nn.optimizer import AdaGrad, GradientDescent
 from nn.loss import SoftMaxCrossEntropyWithLogits
 FLAGS = None
 
@@ -44,12 +44,12 @@ def main(args):
           Dense(1024, weight_initializer=weight_initializer, bias_initializer=bias_initializer, activation=relu),
           Dense(10, weight_initializer=weight_initializer, bias_initializer=bias_initializer, activation=relu)
       ],
-      optimizer=AdaGrad(initial_learning_rate=0.001),
+      optimizer=AdaGrad(learning_rate=0.001, epsilon=1e-8),
       loss=SoftMaxCrossEntropyWithLogits()
     )
 
   # Train
-    for _ in range(200):
+    for _ in range(20):
         batch_xs, batch_ys = mnist.train.next_batch(100)
         batch_xs = np.reshape(batch_xs, [-1, 28, 28, 1])
         model.fit_batch(batch_xs, batch_ys)
@@ -64,6 +64,7 @@ def main(args):
 
     accuracy = (actual_labels == predicted_labels).mean()
     print("Test accuracy: {}".format(accuracy))
+
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()

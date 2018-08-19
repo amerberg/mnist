@@ -23,4 +23,4 @@ class SoftMaxCrossEntropyWithLogits(Loss):
     def compute(self, y_pred, y_true=None):
         if y_true is None:
             y_true = self.y_true
-        return np.mean(np.sum(y_true * np.log(softmax(y_pred)),  axis=1))
+        return - np.mean(np.sum(y_true * np.log(softmax(y_pred)),  axis=1))

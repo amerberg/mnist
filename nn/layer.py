@@ -1,27 +1,12 @@
 import numpy as np
 from functools import reduce
 from operator import mul
+from .tools import filter2d, zero_pad, NotYetSupportedError
 from .activation import Identity
 
 
-class NotYetSupportedError(Exception):
-    pass
-
-
-def filter2d(input_, filter_, stride=(1, 1)):
-    h_strides = (input_.shape[1] - filter_.shape[0]) // stride[0] + 1
-    v_strides = (input_.shape[2] - filter_.shape[1]) // stride[1] + 1
-    result = np.zeros((input_.shape[0], h_strides, v_strides, filter_.shape[-1]))
-    for i in range(h_strides):
-        for j in range(v_strides):
-            result[:, i, j, :] = np.sum(input_[:, i * stride[0]:i * stride[0] + filter_.shape[0],
-                                        j * stride[1]:j * stride[1] + filter_.shape[1], :,
-                                        np.newaxis] * filter_, axis=(1, 2, 3))
-
-    return result
-
-
 def cached(key):
+    """ A decorator for temporarily caching function values during backpropagation."""
     def decorator(fn):
         def decorated(cls):
             value = cls.get_cache(key)
@@ -62,9 +47,11 @@ class Layer(object):
         self.next_layer = next_layer
 
     def set_cache(self, key, value):
+        """ Store a value in the short-term cache, which is not saved between batches."""
         self._cache[key] = (self.model.batch_number, value)
 
     def get_cache(self, key, default=None):
+        """ Get a value from the short-term cache. """
         batch_number, value = self._cache.get(key, (None, None))
         if batch_number == self.model.batch_number:
             return value
@@ -72,6 +59,7 @@ class Layer(object):
             return default
 
     def set_persistent_cache(self, key, value):
+        """ Store a value in a cache which persists between batches."""
         self._persistent_cache[key] = value
 
     def get_persistent_cache(self, key, default=None):
@@ -107,11 +95,12 @@ class Conv2D(Layer):
             self.filter = None
 
     def forward(self, X, training=True):
-        weighted_input = filter2d(self.pad(X), self.filter, self.stride) + self.bias
+        weighted_input = filter2d(zero_pad(X, self.filter.shape[0:2], self.padding), self.filter, self.stride) + self.bias
         activation = self.activation.compute(weighted_input)
         if training:
             self.set_cache('weighted_input', weighted_input)
             self.set_cache('activation', activation)
+            self.set_cache('input', X)
         return activation
 
     def set_previous(self, previous_layer):
@@ -122,17 +111,6 @@ class Conv2D(Layer):
     def initialize_filter(self):
         shape = self.filter_size + (self.input_shape[-1], self.channels)
         self.filter = self.filter_initializer(shape)
-
-    def pad(self, input_):
-        if self.padding == 'valid':
-            return input_
-        elif self.padding == 'same':
-            l_pad, t_pad = (self.filter_size[0] - 1) // 2, (self.filter_size[1] - 1) // 2
-            r_pad, b_pad = self.filter_size[0] - 1 - l_pad, self.filter_size[1] - 1 - t_pad
-            return np.pad(input_, ((0, 0), (l_pad, r_pad), (t_pad, b_pad), (0, 0)), 'constant')
-        elif self.padding == 'full':
-            h_pad, v_pad = self.filter_size[0] - 1, self.filter_size[1] - 1
-            return np.pad(input_, ((0, 0), (h_pad, h_pad), (v_pad, v_pad), (0, 0)), 'constant')
 
     def set_output_shape(self):
         input_shape = self.input_shape
@@ -154,13 +132,33 @@ class Conv2D(Layer):
         return d_a * self.activation.derivative(weighted_input)
 
     def d_input(self):
-        return filter2d(self.pad(self.error()), np.rot90(self.filter.transpose(0, 1, 3, 2), 2), self.stride)
+        padded_error = zero_pad(self.error(), self.filter.shape[:2], self.padding)
+        return filter2d(padded_error, np.rot90(self.filter.transpose(0, 1, 3, 2), 2), self.stride)
 
     def gradients(self):
         return {
-            'filter': np.sum(filter2d(self.error(), self.filter.transpose(0, 1, 3, 2), stride=self.stride), axis=0),
+            'filter': self.filter_gradient(),
             'bias': np.sum(self.error(), axis=(0, 1))
         }
+
+    def filter_gradient(self):
+        error = self.error()
+        error_shape = error.shape[1:3]
+        input_ = self.get_cache('input')
+        h = input_.shape[1]
+        w = input_.shape[2]
+        pad_l, pad_t = (error_shape[0] - 1) // 2, (error_shape[1] - 1) // 2
+        pad_r, pad_b = (error_shape[0] - 1) - pad_l, (error_shape[1] - 1) - pad_t
+        padded_input = np.pad(input_, ((0, 0), (pad_l, pad_r), (pad_t, pad_b), (0, 0)),  'constant')
+        # TODO: this assumes same padding. support other types.
+        # TODO: I kept getting an IndexError with np.fromfunction, so here's a nested for loop
+        grads = np.zeros(self.filter.shape)
+        for m in range(grads.shape[0]):
+            for n in range(grads.shape[1]):
+                for k in range(grads.shape[2]):
+                    for r in range(grads.shape[3]):
+                        grads[m, n, k, r] = np.sum(error[:, :h, :w, r] * padded_input[:, m: m + h, n: n + w, k])
+        return grads
 
 
 class MaxPool2D(Layer):
@@ -262,7 +260,7 @@ class Dense(Layer):
         input_stacked = np.reshape(input_, (input_.shape[0], input_.shape[1], 1))
         return {
             'bias': np.sum(error, axis=0),
-            'weight': np.sum(np.matmul(input_stacked, error_stacked), axis=0) # np.sum(np.matmul(input, self.error()), axis=0)
+            'weight': np.sum(np.matmul(input_stacked, error_stacked), axis=0)
         }
 
     def parameters(self):
@@ -283,10 +281,7 @@ class Dense(Layer):
 
 class Flatten(Layer):
     def forward(self, inputs, training=False):
-        result = np.reshape(inputs, (inputs.shape[0], -1))
-        if training:
-            self.set_cache('output', result)
-        return result
+        return np.reshape(inputs, (inputs.shape[0], -1))
 
     def set_previous(self, previous_layer):
         super().set_previous(previous_layer)
@@ -295,11 +290,6 @@ class Flatten(Layer):
     def set_output_shape(self):
         self.output_shape = (reduce(mul, self.input_shape),)
 
-    @cached('error')
-    def error(self):
-        output = self.get_cache('output')
-        return output * self.next_layer.d_input()
-
     def d_input(self):
-        return np.reshape(self.error(), (-1,) + self.input_shape)
+        return np.reshape(self.next_layer.d_input(), (-1,) + self.input_shape)
 

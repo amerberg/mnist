@@ -28,10 +28,10 @@ def main(_):
 
   C1 = tf.nn.conv2d(input=x, filter=W1, strides=[1, 1, 1, 1], padding='SAME')
   A1 = tf.nn.relu(C1 + b1)
-  M1 = tf.nn.max_pool(value=A1, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
+  M1 = tf.nn.max_pool(value=A1, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='VALID')
   C2 = tf.nn.conv2d(input=M1, filter=W2, strides=[1, 1, 1, 1], padding='SAME')
   A2 = tf.nn.relu(C2 + b2)
-  M2 = tf.nn.max_pool(value=A2, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
+  M2 = tf.nn.max_pool(value=A2, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='VALID')
   flat = tf.reshape(M2, [-1, M2.shape[1:].num_elements()])
 
   W3 = tf.get_variable("W3", initializer=tf.truncated_normal([flat.shape[-1:].num_elements(), 1024], 0, 0.1))
@@ -47,7 +47,7 @@ def main(_):
 
   cross_entropy = tf.reduce_mean(
       tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=y))
-  # We use a learning rate of 0.01 after first trying 0.5 and 0.1 and getting much better accuracy with 0.0`.
+  # We use a learning rate of 0.01 after first trying 0.5 and 0.1 and getting much better accuracy with 0.01.
   train_step = tf.train.AdagradOptimizer(0.01).minimize(cross_entropy)
 
   sess = tf.InteractiveSession()

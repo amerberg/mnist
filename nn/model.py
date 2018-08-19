@@ -1,4 +1,5 @@
 import numpy as np
+import time
 
 
 class Model:
@@ -36,13 +37,18 @@ class Model:
     def forward(self, X, training=False):
         output = X
         for layer in self.layers:
+            start = time.time()
             output = layer.forward(output, training=training)
+            end = time.time()
+            print("forward {} in {}s".format(type(layer), end-start))
         return output
 
     def backward(self, Y):
         self.loss.set_true_value(Y)
         for layer in reversed(self.layers):
+            start = time.time()
             self.optimizer.update_layer(layer)
-
+            end = time.time()
+            print("backward {} in {}s".format(type(layer), end-start))
 
 

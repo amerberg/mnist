@@ -9,8 +9,8 @@ class Optimizer(object):
 
 
 class AdaGrad(Optimizer):
-    def __init__(self, initial_learning_rate=0.001, epsilon=1e-8):
-        self.initial_learning_rate = initial_learning_rate
+    def __init__(self, learning_rate=0.001, epsilon=1e-8):
+        self.learning_rate = learning_rate
         self.epsilon = epsilon
 
     def update_layer(self, layer):
@@ -22,7 +22,7 @@ class AdaGrad(Optimizer):
 
         for key, param in params.items():
             g[key] += grads[key] ** 2
-            params[key] -= self.initial_learning_rate * grads[key] / (g[key] + self.epsilon) ** 0.5
+            params[key] -= self.learning_rate * grads[key] / (g[key] + self.epsilon) ** 0.5
 
         layer.set_persistent_cache('adagrad_g', g)
 
