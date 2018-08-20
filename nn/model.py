@@ -6,6 +6,9 @@ class Model(object):
     """Model class which handles interactions between layers, training, optimization, etc."""
 
     def __init__(self, layers, loss, optimizer):
+        """ layers: a list of nn.layer.Layer objects
+            loss: a nn.loss.Loss object
+            optimizer: an nn.optimizer.Optimizer object """
         for layer in layers:
             layer.set_model(self)
 
