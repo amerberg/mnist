@@ -28,6 +28,7 @@ import sys
 from tensorflow.examples.tutorials.mnist import input_data
 
 import tensorflow as tf
+import numpy as np
 
 FLAGS = None
 
@@ -61,20 +62,30 @@ def main(_):
     sess = tf.InteractiveSession()
     tf.global_variables_initializer().run()
     # Train
+    train_loss = []
+    test_accuracy = []
+    correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(y_, 1))
+    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+
     for _ in range(1000):
         batch_xs, batch_ys = mnist.train.next_batch(100)
         sess.run(train_step, feed_dict={x: batch_xs, y_: batch_ys})
-
+        train_loss.append(sess.run(cross_entropy, feed_dict={x: batch_xs,
+                                        y_: batch_ys}))
+        test_accuracy.append(sess.run(accuracy, feed_dict={x: mnist.test.images,
+                                        y_: mnist.test.labels}))
     # Test trained model
-    correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(y_, 1))
-    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
     print(sess.run(accuracy, feed_dict={x: mnist.test.images,
                                         y_: mnist.test.labels}))
+
+    np.savetxt(FLAGS.dest_file, np.asarray([list(range(1000)), train_loss, test_accuracy]).T)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_dir', type=str, default='/tmp/tensorflow/mnist/input_data',
                         help='Directory for storing input data')
+    parser.add_argument('--dest_file', type=str, default='./results.txt',
+                        help='Destination file for score results')
     FLAGS, unparsed = parser.parse_known_args()
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
