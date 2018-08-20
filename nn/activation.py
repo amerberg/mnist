@@ -1,6 +1,5 @@
 import numpy as np
 
-
 class Activation(object):
     """ Activation function base class"""
 
@@ -21,17 +20,6 @@ class ReLU(Activation):
     @staticmethod
     def derivative(x):
         return (x > 0).astype(np.float32)
-
-
-class SoftMax(Activation):
-    @staticmethod
-    def compute(x):
-        exp = np.exp(x - np.max(x))
-        return exp / np.sum(exp)
-
-    @staticmethod
-    def derivative(x):
-        pass
 
 
 class Identity(Activation):

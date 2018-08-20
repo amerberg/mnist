@@ -1,19 +1,22 @@
 import numpy as np
 from .tools import softmax
+from abc import abstractmethod
 
 
-class Loss:
+class Loss(object):
     def __init__(self):
         self.y_true = None
 
     def set_true_value(self, y_true):
         self.y_true = y_true
 
+    @abstractmethod
     def gradient(self, y_pred):
-        raise NotImplementedError()
+        pass
 
+    @abstractmethod
     def compute(self, y_pred):
-        raise NotImplementedError()
+        pass
 
 
 class SoftMaxCrossEntropyWithLogits(Loss):
